@@ -1,0 +1,102 @@
+# Starship configuration converted from oh-my-posh zen.toml
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Blank line between prompts
+add_newline = true
+
+# Use custom color palette
+palette = 'zen'
+
+# Custom prompt format: path + git on first line, character on second line
+format = """
+$directory\
+$git_branch\
+$git_status\
+$line_break\
+$character"""
+
+# Right prompt: command duration
+right_format = '$cmd_duration'
+
+# Continuation prompt (secondary prompt)
+continuation_prompt = '[❯❯](zen_prompt) '
+
+# Directory module - full path, no truncation
+[directory]
+style = 'zen_path'
+format = '[$path]($style)'
+truncation_length = 0
+truncate_to_repo = false
+
+# Git branch module
+[git_branch]
+style = 'zen_git_branch'
+format = ' [$branch(:$remote_branch)]($style)'
+symbol = ''
+
+# Git status module - shows dirty (*) and ahead/behind arrows
+[git_status]
+format = '[$all_status$ahead_behind](zen_git_status)'
+ahead = '⇡'
+behind = '⇣'
+diverged = '⇕'
+up_to_date = ''
+modified = '[*](zen_git_branch)'
+staged = '[*](zen_git_branch)'
+untracked = ''
+stashed = ''
+deleted = ''
+renamed = ''
+conflicted = ''
+
+# Character module - prompt symbol with color based on exit code
+[character]
+success_symbol = '[❯](zen_prompt)'
+error_symbol = '[❯](zen_prompt_error)'
+vimcmd_symbol = '[❮](zen_prompt)'
+
+# Command duration - only show if > 1000ms (1 second)
+[cmd_duration]
+min_time = 1000
+style = 'zen_duration'
+format = '[$duration]($style)'
+
+# Disable modules not in original config
+[aws]
+disabled = true
+
+[gcloud]
+disabled = true
+
+[package]
+disabled = true
+
+[nodejs]
+disabled = true
+
+[python]
+disabled = true
+
+[rust]
+disabled = true
+
+[golang]
+disabled = true
+
+[java]
+disabled = true
+
+[docker_context]
+disabled = true
+
+[kubernetes]
+disabled = true
+
+# Semantic color palette - matches your oh-my-posh theme
+[palettes.zen]
+zen_path = '#b4befe'
+zen_prompt = '#fab387'
+zen_prompt_error = '#f38ba8'
+zen_git_branch = '#6c7086'
+zen_git_status = '#94e2d5'
+zen_duration = '#f9e2af'

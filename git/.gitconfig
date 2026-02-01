@@ -1,0 +1,42 @@
+[alias]
+  st = status
+  co = checkout
+  lg = log
+  defaultBranch = !git symbolic-ref refs/remotes/origin/HEAD | cut -d'/' -f4
+  m = !git checkout $(git defaultBranch)
+
+[user]
+  name = 
+  email = 
+
+[core]
+  editor = nvim
+  pager = delta
+  autocrlf = input
+  excludesfile = ~/.gitignore
+
+[credential]
+  helper = store
+
+[interactive]
+  diffFilter = delta --color-only
+
+[delta]
+  navigate = true    # use n and N to move between diff sections
+  side-by-side = true
+  line-numbers = true
+
+[merge]
+  tool = nvimdiff
+  conflictstyle = diff3
+
+[diff]
+  colorMoved = default
+  tool = nvimdiff
+  guitool = nvimdiff
+
+[mergetool "nvimdiff"]
+  layout = "LOCAL,BASE,REMOTE / MERGED"
+
+[init]
+  defaultBranch = main
