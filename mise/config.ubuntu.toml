@@ -1,0 +1,36 @@
+# Mise config for Ubuntu/Debian
+# CLI utilities installed here because apt repos have outdated versions
+# Rust is handled by rustup (proper toolchain management)
+
+[tools]
+# JavaScript ecosystem
+node = "lts"
+pnpm = "latest"
+bun = "latest"
+
+# Languages/runtimes
+go = "latest"
+dotnet = "latest"
+
+# Tools that benefit from mise (fast-moving, no system integration needed)
+neovim = "latest"
+lazygit = "latest"
+lazydocker = "latest"
+yazi = "latest"
+starship = "latest"
+bottom = "latest"
+
+# Git tools
+delta = "latest"
+
+# CLI utilities (apt versions are outdated)
+zoxide = "latest"
+fzf = "latest"
+ripgrep = "latest"
+bat = "latest"
+eza = "latest"
+fd = "latest"
+sd = "latest"
+
+[settings]
+auto_install = true

@@ -1,7 +1,7 @@
 # Fuzzy directory finder - cd into selected directory (top-level ~/dev folders only)
 f() {
     local dir
-    dir=$(find /home/$USER/dev -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | \
+    dir=$(fd --type d --max-depth 1 --base-directory /home/$USER/dev | \
     fzf --preview "eza --tree --level=1 --color=always /home/$USER/dev/{}" \
         --bind 'ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up')
     if [ -n "$dir" ]; then
@@ -10,11 +10,12 @@ f() {
 }
 
 # Fuzzy directory finder - cd into selected directory (top-level Windows home folders only)
+# WSL only: navigates /mnt/c/Users/<username>
 fw() {
     local win_user=$(cmd.exe /c 'echo %USERNAME%' 2>/dev/null | tr -d '\r')
     local win_home="/mnt/c/Users/$win_user"
     local dir
-    dir=$(find "$win_home" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | \
+    dir=$(fd --type d --max-depth 1 --base-directory "$win_home" | \
     fzf --preview "eza --tree --level=1 --color=always $win_home/{}" \
         --bind 'ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up')
     if [ -n "$dir" ]; then
@@ -23,23 +24,23 @@ fw() {
 }
 
 # Fuzzy directory finder (deep) - cd into selected directory (including subfolders)
-fd() {
+fdd() {
     local dir
-    dir=$(find /home/$USER/dev -type d \( \
-        -path "*/node_modules" -o \
-        -path "*/.git" -o \
-        -path "*/.cache" -o \
-        -path "*/.vscode" -o \
-        -path "*/.npm" -o \
-        -path "*/dist" -o \
-        -path "*/.bun" -o \
-        -path "*/.local" -o \
-        -path "*/.next" -o \
-        -path "*/.expo" -o \
-        -path "*/.asdf" -o \
-        -path "*/.docker" -o \
-        -path "*/build" \
-    \) -prune -o -type d -print | \
+    dir=$(fd --type d \
+        --exclude node_modules \
+        --exclude .git \
+        --exclude .cache \
+        --exclude .vscode \
+        --exclude .npm \
+        --exclude dist \
+        --exclude .bun \
+        --exclude .local \
+        --exclude .next \
+        --exclude .expo \
+        --exclude .asdf \
+        --exclude .docker \
+        --exclude build \
+        . /home/$USER/dev | \
     awk -F'/' '{if(NF>=2) print "../"$(NF-1)"/"$NF"\t"$0; else print $0"\t"$0}' | \
     fzf --delimiter='\t' --with-nth=1 \
         --preview 'eza --tree --level=1 --color=always {2}' \
@@ -53,34 +54,35 @@ fd() {
 # Fuzzy file finder - open selected file in nvim
 ff() {
     local file
-    file=$(find /home/$USER/dev /home/$USER/.config -type d \( \
-        -path "*/node_modules" -o \
-        -path "*/.git" -o \
-        -path "*/.cache" -o \
-        -path "*/.vscode" -o \
-        -path "*/.npm" -o \
-        -path "*/dist" -o \
-        -path "*/.bun" -o \
-        -path "*/.local" -o \
-        -path "*/.next" -o \
-        -path "*/.expo" -o \
-        -path "*/db" -o \
-        -path "*/.asdf" -o \
-        -path "*/build" -o \
-        -path "*/__pycache__" -o \
-        -path "*/.idea" -o \
-        -path "*/.env" -o \
-        -path "*/.vs" -o \
-        -path "*/vendor" -o \
-        -path "*/coverage" -o \
-        -path "*/.terraform" -o \
-        -path "*/.bundle" -o \
-        -path "*/tmp" -o \
-        -path "*/logs" -o \
-        -path "*/.sass-cache" -o \
-        -path "*/.docker" \
-    \) -prune -o -type f -print | \
-    fzf --preview 'bat --color=always --style=numbers --line-range=:500 {}' --bind 'ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up')
+    file=$(fd --type f \
+        --exclude node_modules \
+        --exclude .git \
+        --exclude .cache \
+        --exclude .vscode \
+        --exclude .npm \
+        --exclude dist \
+        --exclude .bun \
+        --exclude .local \
+        --exclude .next \
+        --exclude .expo \
+        --exclude db \
+        --exclude .asdf \
+        --exclude build \
+        --exclude __pycache__ \
+        --exclude .idea \
+        --exclude .env \
+        --exclude .vs \
+        --exclude vendor \
+        --exclude coverage \
+        --exclude .terraform \
+        --exclude .bundle \
+        --exclude tmp \
+        --exclude logs \
+        --exclude .sass-cache \
+        --exclude .docker \
+        . /home/$USER/dev /home/$USER/.config | \
+    fzf --preview 'bat --color=always --style=numbers --line-range=:500 {}' \
+        --bind 'ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up')
     if [ -n "$file" ]; then
         nvim "$file"
     fi

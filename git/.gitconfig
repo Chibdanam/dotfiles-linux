@@ -1,42 +1,59 @@
 [alias]
-  st = status
-  co = checkout
-  lg = log
-  defaultBranch = !git symbolic-ref refs/remotes/origin/HEAD | cut -d'/' -f4
-  m = !git checkout $(git defaultBranch)
+    lg = log --oneline --graph --decorate
+    defaultBranch = !git symbolic-ref refs/remotes/origin/HEAD | cut -d'/' -f4   # Récupère la branche par défaut du remote
+    m = !git checkout $(git defaultBranch)                                       # Checkout sur la branche principale
+    amend = commit --amend --no-edit          # Ajoute au dernier commit sans changer le message
+    undo = reset --soft HEAD~1                # Annule le dernier commit (garde les changements staged)
+    wip = !git add -A && git commit -m "WIP"  # Commit rapide work-in-progress
+    aliases = config --get-regexp ^alias\\.   # Liste tous les aliases
 
 [user]
-  name = 
-  email = 
+    name = 
+    email = 
 
 [core]
-  editor = nvim
-  pager = delta
-  autocrlf = input
-  excludesfile = ~/.gitignore
+    editor = nvim
+    pager = delta
+    autocrlf = true                                    # CRLF en local, LF dans le repo
+    excludesfile = ~/.gitignore                        # Gitignore global personnel
 
 [credential]
-  helper = store
-
-[interactive]
-  diffFilter = delta --color-only
-
-[delta]
-  navigate = true    # use n and N to move between diff sections
-  side-by-side = true
-  line-numbers = true
-
-[merge]
-  tool = nvimdiff
-  conflictstyle = diff3
-
-[diff]
-  colorMoved = default
-  tool = nvimdiff
-  guitool = nvimdiff
-
-[mergetool "nvimdiff"]
-  layout = "LOCAL,BASE,REMOTE / MERGED"
 
 [init]
-  defaultBranch = main
+    defaultBranch = main   # Branche par défaut pour git init
+
+[push]
+    autoSetupRemote = true   # Plus besoin de --set-upstream au premier push
+
+[pull]
+    rebase = true   # Rebase au lieu de merge lors des pulls
+
+[fetch]
+    prune = true   # Supprime les refs vers les branches distantes supprimées
+
+[rebase]
+    autoStash = true   # Stash automatique avant rebase si working tree dirty
+
+[interactive]
+    diffFilter = delta --color-only   # Delta pour git add -p
+
+[delta]
+    navigate = true      # n/N pour naviguer entre les sections
+    side-by-side = true  # Diff côte à côte
+    line-numbers = true  # Affiche les numéros de ligne
+
+[merge]
+    tool = nvimdiff        # Neovim pour résoudre les conflits
+    conflictstyle = zdiff3 # Affiche LOCAL/BASE/REMOTE dans les conflits (version améliorée)
+
+[diff]
+    algorithm = histogram  # Meilleur algo de diff
+    colorMoved = default   # Colore les lignes déplacées différemment
+    tool = nvimdiff        # Neovim pour git difftool
+    guitool = nvimdiff     # Neovim pour git difftool --gui
+
+[mergetool "nvimdiff"]
+    layout = "LOCAL,BASE,REMOTE / MERGED"   # Layout 4 panneaux pour les merges
+
+[rerere]
+    enabled = true   # Mémorise et réapplique les résolutions de conflits

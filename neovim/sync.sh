@@ -9,13 +9,11 @@ echo "Syncing nvim config to $NVIM_DIR..."
 # Ensure target directory exists
 mkdir -p "$NVIM_DIR"
 
-# Sync all config files from nvim/ subfolder
-cp "$SCRIPT_DIR/nvim/init.lua" "$NVIM_DIR/"
-cp "$SCRIPT_DIR/nvim/lazy-lock.json" "$NVIM_DIR/"
-cp "$SCRIPT_DIR/nvim/lazyvim.json" "$NVIM_DIR/"
-cp "$SCRIPT_DIR/nvim/stylua.toml" "$NVIM_DIR/"
-cp -r "$SCRIPT_DIR/nvim/lua" "$NVIM_DIR/"
-echo "  - init.lua, config files, lua/"
+# Sync all config files
+cp "$SCRIPT_DIR/init.lua" "$NVIM_DIR/"
+cp "$SCRIPT_DIR/lazy-lock.json" "$NVIM_DIR/"
+cp -r "$SCRIPT_DIR/lua" "$NVIM_DIR/"
+echo "  - init.lua, lazy-lock.json, lua/"
 
 echo ""
 echo "Done! Restart nvim to apply changes."

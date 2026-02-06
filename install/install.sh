@@ -1,8 +1,19 @@
 #!/bin/bash
-# WSL Install Script - select and run install scripts via fzf (or fallback menu)
+# Unified Install Script - detects distro and runs appropriate install scripts via fzf (or fallback menu)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-RUN_DIR="$SCRIPT_DIR/run"
+source "$SCRIPT_DIR/lib.sh"
+
+# Detect distribution
+DISTRO=$(detect_distro)
+
+if [ "$DISTRO" = "unknown" ]; then
+    echo -e "${RED}[ERROR]${NC} Unknown distribution. Supported: Arch, Ubuntu"
+    exit 1
+fi
+
+echo -e "${GREEN}Detected distro:${NC} $DISTRO"
+RUN_DIR="$SCRIPT_DIR/$DISTRO"
 
 # Prompt for sudo password upfront and keep it alive
 sudo -v
@@ -10,7 +21,7 @@ while true; do sudo -n true; sleep 50; kill -0 "$$" || exit; done 2>/dev/null &
 SUDO_KEEP_ALIVE_PID=$!
 trap "kill $SUDO_KEEP_ALIVE_PID 2>/dev/null" EXIT
 
-# Find all install scripts in run directory
+# Find all install scripts in distro directory
 mapfile -t INSTALL_SCRIPTS < <(find "$RUN_DIR" -name "*.sh" -type f | sort)
 
 if [ ${#INSTALL_SCRIPTS[@]} -eq 0 ]; then
@@ -21,7 +32,7 @@ fi
 # Build list with display names (strip path and number prefix)
 OPTIONS=("all")
 for script in "${INSTALL_SCRIPTS[@]}"; do
-    # Get filename and remove number prefix (e.g., "00-prerequisites.sh" -> "prerequisites")
+    # Get filename and remove number prefix (e.g., "00-wsl-init.sh" -> "wsl-init")
     filename=$(basename "$script" .sh)
     display_name="${filename#*-}"
     OPTIONS+=("$display_name")
@@ -29,9 +40,9 @@ done
 
 # Show menu (fzf if available, otherwise fallback to numbered list)
 if command -v fzf &> /dev/null; then
-    SELECTION=$(printf '%s\n' "${OPTIONS[@]}" | fzf --prompt="Select install script: " --height=40% --reverse)
+    SELECTION=$(printf '%s\n' "${OPTIONS[@]}" | fzf --prompt="Select install script ($DISTRO): " --height=40% --reverse)
 else
-    echo "Select install script:"
+    echo "Select install script ($DISTRO):"
     echo ""
     for i in "${!OPTIONS[@]}"; do
         echo "  $i) ${OPTIONS[$i]}"
@@ -52,7 +63,7 @@ fi
 
 # Execute based on selection
 if [ "$SELECTION" = "all" ]; then
-    echo "Running all install scripts..."
+    echo "Running all install scripts ($DISTRO)..."
     echo ""
     for script in "${INSTALL_SCRIPTS[@]}"; do
         filename=$(basename "$script" .sh)
