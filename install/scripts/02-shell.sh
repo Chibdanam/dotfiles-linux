@@ -17,7 +17,7 @@ if [ "$SHELL" = "$ZSH_PATH" ]; then
     echo -e "${YELLOW}[SKIP]${NC} zsh already default shell"
 else
     echo -e "${GREEN}[CONFIG]${NC} Setting zsh as default shell"
-    sudo chsh -s "$ZSH_PATH" "$USER"
+    sudo chsh -s "$ZSH_PATH" "${SUDO_USER:-$USER}"
 fi
 
 # git-delta is provided by mise (see mise/config.toml)

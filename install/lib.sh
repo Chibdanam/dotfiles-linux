@@ -17,7 +17,7 @@ detect_distro() {
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         case "$ID" in
-            arch|archarm|endeavouros|manjaro)
+            arch|archarm|endeavouros|manjaro|omarchy)
                 echo "arch"
                 ;;
             ubuntu|debian|linuxmint|pop)

@@ -14,7 +14,8 @@ SUDO_KEEP_ALIVE_PID=$!
 trap "kill $SUDO_KEEP_ALIVE_PID 2>/dev/null" EXIT
 
 # Find all install scripts
-mapfile -t INSTALL_SCRIPTS < <(find "$RUN_DIR" -name "*.sh" -type f | sort)
+# Exclude 00-wsl-init (root bootstrap script, run separately)
+mapfile -t INSTALL_SCRIPTS < <(find "$RUN_DIR" -name "*.sh" -type f ! -name "00-*" | sort)
 
 if [ ${#INSTALL_SCRIPTS[@]} -eq 0 ]; then
     echo "No install scripts found in $RUN_DIR"

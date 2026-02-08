@@ -32,7 +32,7 @@ if is_installed docker; then
 else
     echo -e "${GREEN}[INSTALL]${NC} docker"
     curl -fsSL https://get.docker.com | sh
-    sudo usermod -aG docker "$USER"
+    sudo usermod -aG docker "${SUDO_USER:-$USER}"
     echo "Note: Log out and back in for docker group to take effect"
 fi
 

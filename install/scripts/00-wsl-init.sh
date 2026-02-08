@@ -1,15 +1,13 @@
 #!/bin/bash
 # WSL initialization - run as root inside a fresh WSL instance (Arch or Ubuntu)
-# This script: updates system, installs sudo, creates user, configures sudoers, writes wsl.conf
+# Idempotent: safe to run multiple times. Skips steps already completed.
 #
 # Usage: wsl -d <distro> -u root -- bash install/scripts/00-wsl-init.sh
 
 set -e
 
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/../lib.sh"
 
 # Must run as root
 if [ "$(id -u)" -ne 0 ]; then
@@ -18,91 +16,118 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-# Detect distro (inline — can't source lib.sh since this runs as root before setup)
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    case "$ID" in
-        arch|archarm|endeavouros|manjaro|omarchy) INIT_DISTRO="arch" ;;
-        ubuntu|debian|linuxmint|pop)      INIT_DISTRO="ubuntu" ;;
-        *)
-            echo -e "${RED}[ERROR]${NC} Unsupported distro: $ID"
-            exit 1
-            ;;
-    esac
+DISTRO=$(detect_distro)
+echo -e "${GREEN}Detected distro:${NC} $DISTRO"
+
+# Detect existing non-root user (UID >= 1000)
+EXISTING_USER=$(awk -F: '$3 >= 1000 && $1 != "nobody" { print $1; exit }' /etc/passwd)
+
+if [ -n "$EXISTING_USER" ]; then
+    USERNAME="$EXISTING_USER"
+    echo -e "${YELLOW}[SKIP]${NC} User $USERNAME already exists"
+    NEED_USER_CREATION=false
 else
-    echo -e "${RED}[ERROR]${NC} Cannot detect distro (/etc/os-release not found)"
-    exit 1
+    read -p "Username: " USERNAME
+    if [ -z "$USERNAME" ]; then
+        echo -e "${RED}[ERROR]${NC} Username cannot be empty."
+        exit 1
+    fi
+    NEED_USER_CREATION=true
 fi
 
-echo -e "${GREEN}Detected distro:${NC} $INIT_DISTRO"
+# Only prompt for passwords when creating a new user
+if [ "$NEED_USER_CREATION" = true ]; then
+    while true; do
+        read -s -p "Root password: " ROOT_PASSWORD
+        echo
+        read -s -p "Root password (confirm): " ROOT_PASSWORD_CONFIRM
+        echo
+        [ "$ROOT_PASSWORD" = "$ROOT_PASSWORD_CONFIRM" ] && break
+        echo -e "${RED}Passwords do not match. Try again.${NC}"
+    done
 
-# Prompt for username and passwords
-read -p "Username: " USERNAME
-if [ -z "$USERNAME" ]; then
-    echo -e "${RED}[ERROR]${NC} Username cannot be empty."
-    exit 1
+    while true; do
+        read -s -p "Password for $USERNAME: " USER_PASSWORD
+        echo
+        read -s -p "Password for $USERNAME (confirm): " USER_PASSWORD_CONFIRM
+        echo
+        [ "$USER_PASSWORD" = "$USER_PASSWORD_CONFIRM" ] && break
+        echo -e "${RED}Passwords do not match. Try again.${NC}"
+    done
 fi
-
-read -s -p "Root password: " ROOT_PASSWORD
-echo
-read -s -p "Password for $USERNAME: " USER_PASSWORD
-echo
 
 # 1. Update system
 echo -e "${GREEN}[UPDATE]${NC} Updating system packages"
-case "$INIT_DISTRO" in
+case "$DISTRO" in
     arch)   pacman -Syu --noconfirm ;;
     ubuntu) apt update && apt upgrade -y ;;
 esac
 
 # 2. Install sudo
-echo -e "${GREEN}[INSTALL]${NC} sudo"
-case "$INIT_DISTRO" in
-    arch)   pacman -S --noconfirm --needed sudo ;;
-    ubuntu) apt install -y sudo ;;
-esac
-
-# 3. Set root password
-echo -e "${GREEN}[CONFIG]${NC} Setting root password"
-echo "root:$ROOT_PASSWORD" | chpasswd
-
-# 4. Create user with appropriate group
-if id "$USERNAME" &>/dev/null; then
-    echo -e "${YELLOW}[SKIP]${NC} User $USERNAME already exists"
+if is_installed sudo; then
+    echo -e "${YELLOW}[SKIP]${NC} sudo already installed"
 else
+    echo -e "${GREEN}[INSTALL]${NC} sudo"
+    case "$DISTRO" in
+        arch)   pacman -S --noconfirm --needed sudo ;;
+        ubuntu) apt install -y sudo ;;
+    esac
+fi
+
+# 3. Create user and set passwords (only on fresh setup)
+if [ "$NEED_USER_CREATION" = true ]; then
+    echo -e "${GREEN}[CONFIG]${NC} Setting root password"
+    echo "root:$ROOT_PASSWORD" | chpasswd
+
     echo -e "${GREEN}[CONFIG]${NC} Creating user $USERNAME"
-    case "$INIT_DISTRO" in
+    case "$DISTRO" in
         arch)   useradd -m -G wheel -s /bin/bash "$USERNAME" ;;
         ubuntu) useradd -m -G sudo -s /bin/bash "$USERNAME" ;;
     esac
-fi
-echo "$USERNAME:$USER_PASSWORD" | chpasswd
+    echo "$USERNAME:$USER_PASSWORD" | chpasswd
 
-# 5. Configure sudoers
+    # Clear passwords from memory
+    ROOT_PASSWORD=""
+    USER_PASSWORD=""
+fi
+
+# 4. Configure sudoers
 echo -e "${GREEN}[CONFIG]${NC} Configuring sudo access"
-case "$INIT_DISTRO" in
+case "$DISTRO" in
     arch)
-        sed -i 's/^#.*%wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
-        grep -q '^%wheel ALL=(ALL:ALL) ALL' /etc/sudoers || echo '%wheel ALL=(ALL:ALL) ALL' >> /etc/sudoers
+        if grep -q '^%wheel ALL=(ALL:ALL) ALL' /etc/sudoers; then
+            echo -e "${YELLOW}[SKIP]${NC} wheel group already enabled in sudoers"
+        elif grep -q '^#.*%wheel ALL=(ALL:ALL) ALL' /etc/sudoers; then
+            sed -i 's/^#.*%wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+            echo -e "${GREEN}[CONFIG]${NC} Uncommented wheel group in sudoers"
+        else
+            echo '%wheel ALL=(ALL:ALL) ALL' >> /etc/sudoers
+            echo -e "${GREEN}[CONFIG]${NC} Added wheel group to sudoers"
+        fi
         ;;
     ubuntu)
-        grep -q '^%sudo' /etc/sudoers || echo '%sudo ALL=(ALL:ALL) ALL' >> /etc/sudoers
+        if grep -q '^%sudo' /etc/sudoers; then
+            echo -e "${YELLOW}[SKIP]${NC} sudo group already in sudoers"
+        else
+            echo '%sudo ALL=(ALL:ALL) ALL' >> /etc/sudoers
+            echo -e "${GREEN}[CONFIG]${NC} Added sudo group to sudoers"
+        fi
         ;;
 esac
 
-# 6. Write /etc/wsl.conf
-echo -e "${GREEN}[CONFIG]${NC} Writing /etc/wsl.conf (systemd=true, default user=$USERNAME)"
-cat > /etc/wsl.conf << EOF
-[boot]
+# 5. Write /etc/wsl.conf (only if content differs)
+DESIRED_WSL_CONF="[boot]
 systemd=true
 
 [user]
-default=$USERNAME
-EOF
+default=$USERNAME"
 
-# 7. Clear passwords from memory
-ROOT_PASSWORD=""
-USER_PASSWORD=""
+if [ -f /etc/wsl.conf ] && [ "$(cat /etc/wsl.conf)" = "$DESIRED_WSL_CONF" ]; then
+    echo -e "${YELLOW}[SKIP]${NC} /etc/wsl.conf already correct"
+else
+    echo -e "${GREEN}[CONFIG]${NC} Writing /etc/wsl.conf (systemd=true, default user=$USERNAME)"
+    echo "$DESIRED_WSL_CONF" > /etc/wsl.conf
+fi
 
 echo ""
 echo -e "${GREEN}WSL initialization complete!${NC}"
