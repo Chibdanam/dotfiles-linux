@@ -1,5 +1,5 @@
-# Mise config for Ubuntu/Debian
-# CLI utilities installed here because apt repos have outdated versions
+# Unified mise config — manages all CLI tools across distros
+# System packages (zsh, tmux, unzip, cmake, python, build tools) use the package manager
 # Rust is handled by rustup (proper toolchain management)
 
 [tools]
@@ -12,18 +12,19 @@ bun = "latest"
 go = "latest"
 dotnet = "latest"
 
-# Tools that benefit from mise (fast-moving, no system integration needed)
+# Editor & TUI tools
 neovim = "latest"
 lazygit = "latest"
 lazydocker = "latest"
 yazi = "latest"
+
+# Shell & prompt
 starship = "latest"
-bottom = "latest"
 
 # Git tools
 delta = "latest"
 
-# CLI utilities (apt versions are outdated)
+# CLI utilities
 zoxide = "latest"
 fzf = "latest"
 ripgrep = "latest"
@@ -31,6 +32,8 @@ bat = "latest"
 eza = "latest"
 fd = "latest"
 sd = "latest"
+bottom = "latest"
+fastfetch = "latest"
 
 [settings]
 auto_install = true

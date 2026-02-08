@@ -1,32 +1,32 @@
 #!/bin/bash
 # Install dev core: cmake, python, docker
-# Note: neovim is installed via mise, build-essential is in 01-prerequisites.sh
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/../lib.sh"
 
+DISTRO=$(detect_distro)
+
 echo "Installing dev core tools..."
 
 # cmake
-if is_installed cmake; then
-    echo -e "${YELLOW}[SKIP]${NC} cmake already installed"
-else
-    echo -e "${GREEN}[INSTALL]${NC} cmake"
-    sudo apt update
-    sudo apt install -y cmake
-fi
+pkg_install cmake
 
-# python3 and pip
-if is_installed python3; then
-    echo -e "${YELLOW}[SKIP]${NC} python3 already installed"
-else
-    echo -e "${GREEN}[INSTALL]${NC} python3"
-    sudo apt install -y python3 python3-pip python3-venv
-fi
+# python + pip (distro-specific package names)
+case "$DISTRO" in
+    arch)
+        pkg_install python
+        pkg_install python-pip
+        ;;
+    ubuntu)
+        pkg_install python3
+        pkg_install python3-pip
+        pkg_install python3-venv
+        ;;
+esac
 
-# docker
+# docker (universal installer)
 if is_installed docker; then
     echo -e "${YELLOW}[SKIP]${NC} docker already installed"
 else

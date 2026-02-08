@@ -6,11 +6,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/../lib.sh"
 
-# Ensure mise is activated for this session (node is needed for claude-code)
-eval "$(mise activate bash)" 2>/dev/null || {
-    echo -e "${RED}[ERROR]${NC} mise not found. Run 01-prerequisites.sh first."
-    exit 1
-}
+ensure_mise_activated
 
 echo "Installing AI tools..."
 

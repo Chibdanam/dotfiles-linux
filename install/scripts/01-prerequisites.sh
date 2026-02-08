@@ -1,43 +1,54 @@
 #!/bin/bash
-# Install prerequisites: git, build-essential, mise (polyglot tool manager), rustup
+# Install prerequisites: build tools, git, yay (Arch), mise, rustup
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/../lib.sh"
 
+DISTRO=$(detect_distro)
+
 echo "Installing prerequisites..."
 
+# System update
+pkg_update
+
+# Build tools (distro-specific package names)
+case "$DISTRO" in
+    arch)   pkg_install base-devel ;;
+    ubuntu) pkg_install build-essential ;;
+esac
+
 # git
-if is_installed git; then
-    echo -e "${YELLOW}[SKIP]${NC} git already installed"
-else
-    echo -e "${GREEN}[INSTALL]${NC} git"
-    sudo apt update
-    sudo apt install -y git
+pkg_install git
+
+# yay - AUR helper (Arch only, useful for ad-hoc AUR packages)
+if [ "$DISTRO" = "arch" ]; then
+    if is_installed yay; then
+        echo -e "${YELLOW}[SKIP]${NC} yay already installed"
+    else
+        echo -e "${GREEN}[INSTALL]${NC} yay"
+        cd /tmp
+        git clone https://aur.archlinux.org/yay.git
+        cd yay
+        makepkg -si --noconfirm
+        cd -
+        rm -rf /tmp/yay
+    fi
 fi
 
-# build-essential (g++, gcc, make)
-if is_installed g++; then
-    echo -e "${YELLOW}[SKIP]${NC} build-essential already installed"
-else
-    echo -e "${GREEN}[INSTALL]${NC} build-essential"
-    sudo apt install -y build-essential
-fi
-
-# mise
+# mise (universal installer works on both distros)
 if is_installed mise; then
     echo -e "${YELLOW}[SKIP]${NC} mise already installed"
 else
     echo -e "${GREEN}[INSTALL]${NC} mise"
     curl https://mise.run | sh
-    # Add to PATH for current session
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
 # Ensure mise config is in place
 MISE_CONFIG_DIR="$HOME/.config/mise"
-MISE_CONFIG_SRC="$SCRIPT_DIR/../../mise/config.ubuntu.toml"
+MISE_CONFIG_SRC="$SCRIPT_DIR/../../mise/config.toml"
 
 if [ -f "$MISE_CONFIG_SRC" ]; then
     mkdir -p "$MISE_CONFIG_DIR"
@@ -57,6 +68,9 @@ mise install --yes
 if is_installed rustup; then
     echo -e "${YELLOW}[SKIP]${NC} rustup already installed"
 else
+    if is_installed cargo && ! is_installed rustup; then
+        echo -e "${YELLOW}[WARNING]${NC} Rust installed without rustup. Consider removing system Rust first."
+    fi
     echo -e "${GREEN}[INSTALL]${NC} rustup"
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     source "$HOME/.cargo/env"
