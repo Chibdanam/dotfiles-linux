@@ -6,8 +6,6 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/../lib.sh"
 
-ensure_mise_activated
-
 echo "Installing AI tools..."
 
 # claude-code

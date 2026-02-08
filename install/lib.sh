@@ -6,6 +6,9 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# Ensure mise is in PATH (it installs to ~/.local/bin)
+export PATH="$HOME/.local/bin:$PATH"
+
 is_installed() {
     command -v "$1" &> /dev/null
 }
